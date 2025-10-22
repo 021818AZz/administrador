@@ -663,6 +663,12 @@
         <div class="menu-item" onclick="switchTab('deposits')">
             <i>💰</i> Depósitos
         </div>
+
+        </div>
+        <div>
+            <a href="index1.html">💳Contas de todos</a> 
+        </div>
+
         <div class="menu-item" onclick="switchTab('withdrawals')">
             <i>💳</i> Saques
         </div>
@@ -786,7 +792,7 @@
 
 <script>
 // Configuração da API
-const API_BASE_URL = 'https://bd-p4q7.onrender.com'; // Substitua pela URL real da API
+const API_BASE_URL = 'http://localhost:3000'; // Substitua pela URL real da API
 const ADMIN_TOKEN = 'admin_secret_token_123'; // Em produção, usar sistema de login seguro
 
 // Estado global
@@ -1464,5 +1470,4 @@ document.getElementById('confirmationModal').addEventListener('click', function(
 });
 </script>
 </body>
-
 </html>
