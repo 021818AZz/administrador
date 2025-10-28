@@ -545,6 +545,46 @@
             font-size: 13px;
         }
 
+        /* Estilos para a tabela de saques */
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .info-item {
+            background: var(--coffee-cream);
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid var(--coffee-medium);
+        }
+
+        .info-label {
+            font-size: 0.8em;
+            color: var(--coffee-medium);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .info-value {
+            font-weight: bold;
+            color: var(--coffee-dark);
+            word-break: break-all;
+        }
+
+        /* Badges para status */
+        .badge-success { background: var(--success); color: white; }
+        .badge-warning { background: var(--warning); color: white; }
+        .badge-danger { background: var(--error); color: white; }
+        .badge-info { background: var(--info); color: white; }
+
         @media (max-width: 768px) {
             .users-grid {
                 grid-template-columns: 1fr;
@@ -700,15 +740,16 @@
                         <thead>
                             <tr>
                                 <th>Usuário</th>
-                                <th>Valor</th>
+                                <th>Valores</th>
                                 <th>Banco</th>
+                                <th>Conta</th>
                                 <th>Status</th>
-                                <th>Data</th>
+                                <th>Datas</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody id="withdrawalsBody">
-                            <tr><td colspan="6" class="loading">Carregando saques...</td></tr>
+                            <tr><td colspan="7" class="loading">Carregando saques...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -987,6 +1028,7 @@
         let currentTab = 'users';
         let selectedUserId = null;
         let selectedUserData = null;
+        let currentWithdrawals = []; // Variável global para armazenar os saques
 
         const requestOptions = {
             headers: {
@@ -1107,7 +1149,7 @@
             }
         }
 
-        // Função para carregar saques
+        // Função para carregar saques - ATUALIZADA
         async function loadWithdrawals() {
             try {
                 showLoading('withdrawalsBody');
@@ -1120,11 +1162,12 @@
                 const data = await response.json();
                 
                 if (data.success) {
+                    currentWithdrawals = data.data; // Armazena os saques
                     displayWithdrawals(data.data);
                 }
             } catch (error) {
                 console.error('Erro ao carregar saques:', error);
-                document.getElementById('withdrawalsBody').innerHTML = '<tr><td colspan="6" class="loading">Erro ao carregar saques</td></tr>';
+                document.getElementById('withdrawalsBody').innerHTML = '<tr><td colspan="7" class="loading">Erro ao carregar saques</td></tr>';
             }
         }
 
@@ -1773,34 +1816,176 @@
             `).join('');
         }
 
-        // Funções para exibir saques
+        // ==============================================
+        // FUNÇÕES PARA EXIBIR SAQUES - VERSÃO COMPLETA
+        // ==============================================
+
+        // Funções para exibir saques - VERSÃO COMPLETA
         function displayWithdrawals(withdrawals) {
             const tbody = document.getElementById('withdrawalsBody');
             
             if (!withdrawals || withdrawals.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="loading">Nenhum saque encontrado</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" class="loading">Nenhum saque encontrado</td></tr>';
                 return;
             }
 
             tbody.innerHTML = withdrawals.map(withdrawal => `
                 <tr>
-                    <td>${withdrawal.user_mobile || 'N/A'}</td>
-                    <td>${formatCurrency(withdrawal.amount)}</td>
-                    <td>${withdrawal.bank_name} (${withdrawal.account_name})</td>
+                    <td>
+                        <strong>${withdrawal.user_mobile || 'N/A'}</strong><br>
+                        <small>ID: ${withdrawal.user_id}</small>
+                    </td>
+                    <td>
+                        <strong>${formatCurrency(withdrawal.amount)}</strong><br>
+                        <small>Taxa: ${formatCurrency(withdrawal.tax || 0)}</small><br>
+                        <small>Líquido: ${formatCurrency(withdrawal.net_amount || withdrawal.amount)}</small>
+                    </td>
+                    <td>
+                        <strong>${withdrawal.bank_name}</strong><br>
+                        <small>Código: ${withdrawal.bank_code || 'N/A'}</small>
+                    </td>
+                    <td>
+                        <strong>${withdrawal.account_name}</strong><br>
+                        <small>IBAN: ${withdrawal.iban}</small>
+                    </td>
                     <td>
                         <span class="badge ${getWithdrawalStatusBadge(withdrawal.status)}">
                             ${withdrawal.status}
                         </span>
                     </td>
-                    <td>${formatDate(withdrawal.created_at)}</td>
                     <td>
-                        ${withdrawal.status === 'pending' ? `
-                            <button class="btn btn-success" onclick="approveWithdrawal('${withdrawal.id}')">✅</button>
-                            <button class="btn btn-danger" onclick="rejectWithdrawal('${withdrawal.id}')">❌</button>
-                        ` : '-'}
+                        ${formatDate(withdrawal.created_at)}<br>
+                        ${withdrawal.processed_at ? `<small>Processado: ${formatDate(withdrawal.processed_at)}</small>` : ''}
+                    </td>
+                    <td>
+                        <div class="action-buttons" style="flex-direction: column; gap: 5px;">
+                            ${withdrawal.status === 'pending' ? `
+                                <button class="btn btn-success" onclick="approveWithdrawal('${withdrawal.id}')" style="padding: 6px 12px; font-size: 12px;">
+                                    ✅ Aprovar
+                                </button>
+                                <button class="btn btn-danger" onclick="rejectWithdrawal('${withdrawal.id}')" style="padding: 6px 12px; font-size: 12px;">
+                                    ❌ Rejeitar
+                                </button>
+                            ` : ''}
+                            <button class="btn btn-info" onclick="viewWithdrawalDetails('${withdrawal.id}')" style="padding: 6px 12px; font-size: 12px;">
+                                👁️ Detalhes
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
+        }
+
+        // Função para visualizar detalhes completos de um saque
+        function viewWithdrawalDetails(withdrawalId) {
+            const withdrawal = currentWithdrawals.find(w => w.id === withdrawalId);
+            if (!withdrawal) return;
+
+            const modalContent = `
+                <div class="modal-content" style="max-width: 600px;">
+                    <h3>📋 Detalhes Completos do Saque</h3>
+                    
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">ID do Saque</div>
+                            <div class="info-value">${withdrawal.id}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Usuário</div>
+                            <div class="info-value">${withdrawal.user_mobile} (ID: ${withdrawal.user_id})</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Valor Solicitado</div>
+                            <div class="info-value">${formatCurrency(withdrawal.amount)}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Taxa</div>
+                            <div class="info-value">${formatCurrency(withdrawal.tax || 0)}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Valor Líquido</div>
+                            <div class="info-value">${formatCurrency(withdrawal.net_amount || withdrawal.amount)}</div>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Banco</div>
+                            <div class="info-value">${withdrawal.bank_name}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Código do Banco</div>
+                            <div class="info-value">${withdrawal.bank_code || 'N/A'}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Titular da Conta</div>
+                            <div class="info-value">${withdrawal.account_name}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">IBAN/Número da Conta</div>
+                            <div class="info-value">${withdrawal.iban}</div>
+                        </div>
+                    </div>
+
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <div class="info-label">Status</div>
+                            <div class="info-value">
+                                <span class="badge ${getWithdrawalStatusBadge(withdrawal.status)}">
+                                    ${withdrawal.status}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Data de Solicitação</div>
+                            <div class="info-value">${formatDateTime(withdrawal.created_at)}</div>
+                        </div>
+                        <div class="info-item">
+                            <div class="info-label">Data de Processamento</div>
+                            <div class="info-value">${withdrawal.processed_at ? formatDateTime(withdrawal.processed_at) : 'Pendente'}</div>
+                        </div>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button class="btn" onclick="closeModal('withdrawalDetailsModal')" style="background: #ccc;">
+                            ❌ Fechar
+                        </button>
+                        ${withdrawal.status === 'pending' ? `
+                            <button class="btn btn-success" onclick="approveWithdrawal('${withdrawal.id}')">
+                                ✅ Aprovar Saque
+                            </button>
+                            <button class="btn btn-danger" onclick="rejectWithdrawal('${withdrawal.id}')">
+                                ❌ Rejeitar Saque
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            // Criar modal dinâmico
+            const modal = document.createElement('div');
+            modal.id = 'withdrawalDetailsModal';
+            modal.className = 'modal active';
+            modal.innerHTML = modalContent;
+            document.body.appendChild(modal);
+
+            // Configurar fechamento do modal
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    document.body.removeChild(modal);
+                }
+            });
+        }
+
+        // Função auxiliar para formatar data e hora
+        function formatDateTime(dateString) {
+            try {
+                if (!dateString) return 'N/A';
+                const date = new Date(dateString);
+                return date.toLocaleString('pt-BR');
+            } catch (error) {
+                return 'Data inválida';
+            }
         }
 
         // Funções para exibir depósitos
@@ -1871,10 +2056,18 @@
             }
         }
 
-        // Funções para aprovar/rejeitar
+        // ==============================================
+        // FUNÇÕES PARA APROVAR/REJEITAR SAQUES - VERSÃO MELHORADA
+        // ==============================================
+
+        // Funções para aprovar/rejeitar saques - VERSÃO MELHORADA
         async function approveWithdrawal(id) {
-            if (confirm('Deseja aprovar este saque?')) {
+            const withdrawal = currentWithdrawals.find(w => w.id === id);
+            if (!withdrawal) return;
+
+            if (confirm(`Deseja APROVAR o saque de ${formatCurrency(withdrawal.amount)} para ${withdrawal.user_mobile}?`)) {
                 try {
+                    showLoading('withdrawalsBody');
                     const response = await fetch(`${API_BASE}/withdrawal/${id}/approve`, {
                         method: 'PUT',
                         headers: requestOptions.headers
@@ -1883,37 +2076,41 @@
                     const result = await response.json();
                     
                     if (result.success) {
-                        showAlert('Saque aprovado com sucesso!', 'success');
+                        showAlert('✅ Saque aprovado com sucesso!', 'success');
                         loadWithdrawals();
                     } else {
-                        showAlert('Erro ao aprovar saque: ' + result.message, 'error');
+                        showAlert('❌ Erro ao aprovar saque: ' + result.message, 'error');
                     }
                 } catch (error) {
-                    showAlert('Erro de conexão: ' + error.message, 'error');
+                    showAlert('❌ Erro de conexão: ' + error.message, 'error');
                 }
             }
         }
 
         async function rejectWithdrawal(id) {
-            const reason = prompt('Digite o motivo da rejeição:');
-            if (reason !== null) {
+            const withdrawal = currentWithdrawals.find(w => w.id === id);
+            if (!withdrawal) return;
+
+            const reason = prompt(`Digite o motivo da REJEIÇÃO do saque de ${formatCurrency(withdrawal.amount)} para ${withdrawal.user_mobile}:`);
+            if (reason !== null && reason.trim() !== '') {
                 try {
+                    showLoading('withdrawalsBody');
                     const response = await fetch(`${API_BASE}/withdrawal/${id}/reject`, {
                         method: 'PUT',
                         headers: requestOptions.headers,
-                        body: JSON.stringify({ reason })
+                        body: JSON.stringify({ reason: reason.trim() })
                     });
                     
                     const result = await response.json();
                     
                     if (result.success) {
-                        showAlert('Saque rejeitado com sucesso!', 'success');
+                        showAlert('✅ Saque rejeitado com sucesso! Valor devolvido ao usuário.', 'success');
                         loadWithdrawals();
                     } else {
-                        showAlert('Erro ao rejeitar saque: ' + result.message, 'error');
+                        showAlert('❌ Erro ao rejeitar saque: ' + result.message, 'error');
                     }
                 } catch (error) {
-                    showAlert('Erro de conexão: ' + error.message, 'error');
+                    showAlert('❌ Erro de conexão: ' + error.message, 'error');
                 }
             }
         }
