@@ -1132,66 +1132,7 @@ function renderTransactions() {
                     <div class="detail-label">Tipo</div>
                     <div class="detail-value">${getTransactionType(transaction.type)}</div>
                 </div>
-                <div class="detail-item">
-                    <div class="detail-label">Valor</div>
-                    <div class="detail-value ${transaction.amount < 0 ? 'status-rejected' : 'status-approved'}">
-                        ${transaction.amount > 0 ? '+' : ''}KZ ${formatNumber(Math.abs(transaction.amount))}
-                    </div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">Saldo Final</div>
-                    <div class="detail-value">KZ ${formatNumber(transaction.balance_after || 0)}</div>
-                </div>
-            </div>
-            <div class="detail-label" style="text-align: center; margin-top: 10px;">
-                ${transaction.description || 'Transação realizada'}
-            </div>
-        </div>
-    `).join('');
-}
-
-// Aprovar depósito
-async function approveDeposit(depositId) {
-    showConfirmationModal(
-        'Aprovar Depósito',
-        'Tem certeza que deseja aprovar este depósito? O valor será creditado na conta do usuário.',
-        async () => {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/deposit/${depositId}/approve`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${ADMIN_TOKEN}` }
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    showMessage('Depósito aprovado com sucesso!');
-                    loadDashboardData();
-                } else {
-                    showError('Erro ao aprovar depósito: ' + (data.message || 'Erro desconhecido'));
-                }
-            } catch (error) {
-                console.error('Erro ao aprovar depósito:', error);
-                showError('Erro de conexão');
-            }
-        }
-    );
-}
-
-// Rejeitar depósito
-async function rejectDeposit(depositId) {
-    showConfirmationModal(
-        'Rejeitar Depósito',
-        'Tem certeza que deseja rejeitar este depósito? Esta ação não pode ser desfeita.',
-        async () => {
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/admin/deposit/${depositId}/reject`, {
-                    method: 'PUT',
-                    headers: { 
-                        'Authorization': `Bearer ${ADMIN_TOKEN}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ reason: 'Rejeitado pelo administrador' })
+                <dy: JSON.stringify({ reason: 'Rejeitado pelo administrador' })
                 });
 
                 const data = await response.json();
@@ -1470,4 +1411,5 @@ document.getElementById('confirmationModal').addEventListener('click', function(
 });
 </script>
 </body>
+
 </html>
